@@ -24,13 +24,13 @@
         </v-col>
     </v-row>
   </v-parallax>
-  <v-container fluid>
+  <v-container>
     <v-row>
-      <v-col cols="3">
+      <v-col cols="4">
         <v-toolbar flat>
           <v-toolbar-title>Organizations</v-toolbar-title>
         </v-toolbar>
-        <v-list rounded>
+        <v-list>
             <v-list-item-group v-model="activeProviderIndex">
               <v-list-item v-for="provider in providers" :key="provider.id" @click="getCapabilitiesForProviderId(provider)">
                 <v-list-item-content>
@@ -41,7 +41,7 @@
             </v-list-item-group>
           </v-list>
 
-          <v-list rounded v-if="0">
+          <v-list v-if="0">
             <v-subheader>Tags</v-subheader>
 
               <v-list-item-group
@@ -100,7 +100,7 @@
     <v-tabs-items v-model="resultsTab">
       <v-tab-item>
 
-          <v-virtual-scroll height="700" itemHeight="64" :items="capabilities">
+          <v-virtual-scroll  height="700" itemHeight="64" :items="capabilities">
             <template v-slot:default="{ item }">
               
               <v-list-item @click="displayItem(item)" two-line :key="item.id">
@@ -124,25 +124,28 @@
     </v-tab-item>
     </v-tabs-items>
       </v-col>
-      <v-col cols="5" v-if="activeCapability">
-        <v-toolbar
-          flat
-        >
+      <v-col cols="4" v-if="activeCapability">
 
-          <v-btn
-              icon
-              class="hidden-xs-only"
-              @click="activeCapability = null"
-            >
-              <v-icon>mdi-arrow-left</v-icon>
-            </v-btn>
-          <v-toolbar-title>Details</v-toolbar-title>
-
-        </v-toolbar>
         <div v-if="activeCapability != null">
           <v-card
               class="mx-auto"
             >
+
+              <v-toolbar
+                flat
+                color="rgba(0, 0, 0, 0)"
+              >
+
+                <v-btn
+                    icon
+                    class="hidden-xs-only"
+                    @click="activeCapability = null"
+                  >
+                    <v-icon>mdi-close</v-icon>
+                  </v-btn>
+                <v-toolbar-title>Details</v-toolbar-title>
+
+              </v-toolbar>
               <v-img
                 class="white--text align-end"
                 height="200px"
@@ -223,6 +226,7 @@ import mapboxgl from "mapbox-gl";
         if(page == 1) {
           that.capabilities = [];
           that.latLongPairsToShow = [];
+          that.activeCapability = null;
         }
         let endpoint = `//dev-nemrics.pantheonsite.io/wp-json/wp/v2/capability?_embed=true&${this.queryString}&page=${page}`;
         fetch(endpoint)
@@ -237,12 +241,14 @@ import mapboxgl from "mapbox-gl";
             //that.capabilities.push(item);
             if(item.contact_card.length > 0){
               item.contact_card = item.contact_card[0]
-              that.latLongPairsToShow[item.contact_card.id] = {lat:item.contact_card.latitiude, long:item.contact_card.longitude}
+              that.latLongPairsToShow[item.contact_card.id] = {id: item.contact_card.id, name:item.contact_card.name,lat:item.contact_card.latitiude, long:item.contact_card.longitude}
             } else {
               item.contact_card = {}
             }            
           });
           that.populateMap();
+          
+
           that.capabilities = that.capabilities.concat(data);
           if(page < that.total_pages)
             that.getCapabilities(page+1);
@@ -269,11 +275,13 @@ import mapboxgl from "mapbox-gl";
       getCapabilitiesForProviderId(provider) {
         if(this.activeProvider !== provider) {
           this.activeProvider = provider;
-          
           // this.latLongPairsToShow = [];
           // this.latLongPairsToShow.push({"latitude":provider.latitiude, "longitude":provider.longitude});
           
           this.getCapabilities();
+          
+          
+          
         }
         else {
           this.activeProvider = null;
@@ -284,9 +292,10 @@ import mapboxgl from "mapbox-gl";
 
       getCapabilitiesByTag() {
         // function made obsolete when we went stateful but whatever
-        this.resultsTab = 0;
+        //this.resultsTab = 0;
         this.activeCapability = null;
-        this.getCapabilities();
+        this.getCapabilities();        
+
       },
 
       getAllProviders:function(extra = ""){
@@ -339,7 +348,9 @@ import mapboxgl from "mapbox-gl";
 
       displayItem(item) {
         console.log(item);
+        
         this.activeCapability = item;
+        
       },
 
       initMap: function() {
@@ -369,6 +380,8 @@ import mapboxgl from "mapbox-gl";
           features: [],
         };
 
+
+
         geojson.features = this.latLongPairsToShow.map((wp) => {
           return {
             type: "Feature",
@@ -378,7 +391,7 @@ import mapboxgl from "mapbox-gl";
             },
             properties: {
               title: `${wp.name}`,
-              description: ``
+              id:`${wp.id}`
             },
           };
         });
@@ -387,13 +400,17 @@ import mapboxgl from "mapbox-gl";
         // create a HTML element for each feature
         var el = document.createElement("div");
         el.className = "marker";
+        el.addEventListener("click", function(){
+          //that.activeProvider = marker.properties.id;
+        });
         // make a marker for each feature and add it to the map
         var mkr = new mapboxgl.Marker(el)
           .setLngLat(marker.geometry.coordinates)
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }) // add popups
-              .setHTML(``
-            )
+              .setHTML(`
+                <h3>${marker.properties.title}</h3>
+              `)
           )
           .addTo(that.map);
 
@@ -441,6 +458,7 @@ p {
 
 #mapView{
   height:500px;
+  width:100%;
 }
 
 .marker::before{
@@ -449,5 +467,15 @@ p {
     color: #333;
     font-size: 40px;
     cursor: pointer;
+}
+
+.col {
+  transition: all 2s;
+}
+
+.mapboxgl-popup-close-button {
+    width: 20px;
+    height: 20px;
+    font-size: 18px; 
 }
 </style>
