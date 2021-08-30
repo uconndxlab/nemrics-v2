@@ -238,34 +238,22 @@
                  <iframe width="800" height="450" style="border:0; max-width:100%;" loading="lazy" allowfullscreen
 :src="`https://maps.google.com/maps?q=${activeCapability.contact_card.address}&t=&z=13&ie=UTF8&iwloc=&output=embed`"></iframe>
               <v-card-text class="text--primary">
-
-                <div v-html="activeCapability.excerpt.rendered"></div>
                 
-                <div v-html="activeCapability.content.rendered"></div>
+                <v-card-subtitle v-html="activeCapability.excerpt.rendered"></v-card-subtitle>
+                
+                <!-- <v-card-subtitle v-html="activeCapability.content.rendered"></v-card-subtitle> -->
+                
+                
                 <v-card-subtitle>
-                <strong>Offered by:</strong> <span v-html="activeCapability.contact_card.name"></span>
+                <strong>Offered by:</strong> <a :href="activeCapability.contact_card.website" target="_blank" v-html="activeCapability.contact_card.name"></a>
                 </v-card-subtitle>
                 <v-card-subtitle>
-                  <div><strong>Contact name:</strong> {{activeCapability.contact_card.contact_name}}</div>
+                  <div><strong>Contact name:</strong> {{activeCapability.contact_card.contact_name}} (<a                   :href='`mailto:${activeCapability.contact_card.contact_email}`'
+                  v-html='activeCapability.contact_card.contact_email'></a>)</div>
                 </v-card-subtitle>
               </v-card-text>
 
-              <v-card-actions>
-                <v-btn
-                  :href="activeCapability.contact_card.website"
-                  text
-                >
-                  website
-                </v-btn>
 
-                <v-btn
-                  text
-                  :href='`mailto:${activeCapability.contact_card.contact_email}`'
-                  v-html='activeCapability.contact_card.contact_email'
-                >
-                  
-                </v-btn>
-              </v-card-actions>
             </v-card>
     </v-dialog>
 
@@ -277,7 +265,9 @@
 
         <h3 v-html="contact_card_content.title" class="py-10"></h3>
         <div class="py-3">
-        <v-btn color="primary" :to="`/provider/${contact_card_content.id}`">View Matching Capabilities</v-btn>
+          <!-- <v-btn v-if="tagToSearch" color="primary" :to="`/provider/${contact_card_content.id}/${tagToSearch.id}`">View {{tagToSearch.name}}s </v-btn> -->
+          <v-btn @click="resultsTab = 0; showSingleContactCard = !showSingleContactCard;" color="primary" :to="`/provider/${contact_card_content.id}`">View Capabilities Here </v-btn>
+
         </div>
 
                 <v-btn
@@ -454,7 +444,8 @@ import mapboxgl from "mapbox-gl";
       removeActiveProvider: function() {
         this.activeProvider = null;
         this.activeProviderIndex = null;
-        this.activeCapability = null;
+        this.activeCapability = null
+        this.$router.push({name:"Home"});
         this.getCapabilities();
       },
 
@@ -583,8 +574,18 @@ import mapboxgl from "mapbox-gl";
         $route(to, from) {
           console.log(from);
           if(to.name == "SingleProvider") {
-            var prov = to.params.singleProvider;
+            let prov = to.params.singleProvider;
             this.getCapabilitiesForProviderId(prov);
+          }
+
+          if(to.name == "ProviderAndTag") {
+            let prov = to.params.provider;
+            let tag = to.params.tag;
+
+            console.log(prov);
+            console.log(tag);
+
+
           }
         }
     },

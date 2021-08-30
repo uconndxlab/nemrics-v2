@@ -23,7 +23,7 @@ const routes = [
   },
   {
     path: '/provider/:provider/:tag',
-    name: 'ProviderandTag',
+    name: 'ProviderAndTag',
     component: Home
   },
   {
