@@ -12,6 +12,9 @@
 
 export default {
   name: 'App',
+  metaInfo: {
+    title: 'NEMRICS | New England Maritime Research Innovation Capabilities Study'
+  },
 
   data: () => ({
       allTags:[],

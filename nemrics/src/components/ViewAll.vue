@@ -65,19 +65,53 @@
   <v-container fluid>
     <v-row>
       <v-col cols="3">
+        <div class="sticky-top">
         <v-toolbar flat>
           <v-toolbar-title>Organizations</v-toolbar-title>
         </v-toolbar>
-        <v-list>
-            <v-list-item-group v-model="activeProviderIndex">
-              <v-list-item v-for="provider in providers" :key="provider.id" @click="getCapabilitiesForProviderId(provider)">
-                <v-list-item-content>
-                  <v-list-item-title>{{provider.name}}</v-list-item-title>
-                  
-                </v-list-item-content>
-              </v-list-item>
-            </v-list-item-group>
-          </v-list>
+          <ul v-if="0" class="provider-list">
+            <li v-for="provider in providers" :key="provider.id">
+              <a :href="`#/provider/${provider.id}`" v-html="provider.name"></a>
+              <ul v-if="provider.children.length">
+                <li v-for="child in provider.children" :key="child.id" >
+                  <a :href="`#/provider/${child.id}`" v-html="child.name"></a>
+                  </li>
+              </ul>
+            </li>
+          </ul>
+<v-list>
+      <v-list-group
+        v-for="provider in providers"
+        :key="provider.id"
+      >
+        <template v-slot:activator>
+          <v-list-item-content>
+            <v-list-item-title v-html="provider.name"></v-list-item-title>
+
+          </v-list-item-content>
+        </template>
+        <v-list-item dense v-if="provider.children.length == 0" link :href="`#/provider/${provider.id}`">
+          <v-list-item-content>
+            <v-list-item-title>View All</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
+        <v-list-item
+        dense
+          v-for="child in provider.children"
+          :key="child.id"
+          :href="`#/provider/${child.id}`"
+          link
+        >
+          <v-list-item-content>
+            <v-list-item-title v-html="child.name"></v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+        
+      </v-list-group>
+      
+    </v-list>
+
 
           <v-list v-if="0">
             <v-subheader>Tags</v-subheader>
@@ -89,20 +123,26 @@
                 <v-list-item v-for="tag in allTags" :key="tag.id" @click="getCapabilitiesByTag(tag.id)">
                   
                   <v-list-item-content>
-                    <v-list-item-title>{{tag.name}} ({{tag.count}})</v-list-item-title>
-                    
+                    <v-list-item-title>{{tag.name}} ({{tag.count}})</v-list-item-title>                    
                   </v-list-item-content>
+
+
+
                 </v-list-item>
               </v-list-item-group>
           </v-list>
 
-        
+        </div>
       </v-col>
       <v-col>
         <v-toolbar
           flat
         >
-          <v-toolbar-title>Capabilities ({{capabilities.length}})</v-toolbar-title>
+          <v-toolbar-title>    Search Results    </v-toolbar-title> <v-chip
+      class="ma-2" color="primary"
+    >
+      {{capabilities.length}}
+    </v-chip>
             <template v-slot:extension>
                 <v-tabs
                   v-model="resultsTab"
@@ -123,8 +163,9 @@
             v-if="activeProvider"
             close
             @click:close="removeActiveProvider"
+            
           >
-            {{activeProvider.name}}
+            <span v-html="activeProviderName"></span>
           </v-chip>
 
           <v-chip
@@ -138,7 +179,7 @@
     <v-tabs-items v-model="resultsTab">
       <v-tab-item>
 
-          <v-virtual-scroll  height="700" itemHeight="64" :items="capabilities">
+          <v-virtual-scroll max-height="1000" itemHeight="64" :items="capabilities">
             <template v-slot:default="{ item }">
               
               <v-list-item @click="displayItem(item)" two-line :key="item.id">
@@ -158,7 +199,7 @@
           </v-virtual-scroll>
       </v-tab-item>
     <v-tab-item>
-<div id="mapView"></div>
+      <div id="mapView"></div>
     </v-tab-item>
     </v-tabs-items>
       </v-col>
@@ -231,9 +272,15 @@
     <v-bottom-sheet v-model="showSingleContactCard" hide-overlay persistent>
       <v-sheet
         class="text-center"
-        height="200px"
+        height="250px"
       >
-        <v-btn
+
+        <h3 v-html="contact_card_content.title" class="py-10"></h3>
+        <div class="py-3">
+        <v-btn color="primary" :to="`/provider/${contact_card_content.id}`">View Matching Capabilities</v-btn>
+        </div>
+
+                <v-btn
           class="mt-6"
           text
           color="red"
@@ -241,10 +288,6 @@
         >
           close
         </v-btn>
-        <h5>{{contact_card_content.title}}</h5>
-        <div class="py-3">
-          View matching capabilities: <v-btn text @click="resultsTab=0; showSingleContactCard = false;">View Matching Capabilities</v-btn>
-        </div>
       </v-sheet>
     </v-bottom-sheet>
 
@@ -339,16 +382,13 @@ import mapboxgl from "mapbox-gl";
         });
       },
 
-      getCapabilitiesForProviderId(provider) {
-        if(this.activeProvider !== provider) {
-          this.activeProvider = provider;
+      getCapabilitiesForProviderId(providerId) {
+        if(this.activeProvider !== providerId) {
+          this.activeProvider = providerId;
           // this.latLongPairsToShow = [];
           // this.latLongPairsToShow.push({"latitude":provider.latitiude, "longitude":provider.longitude});
           
-          this.getCapabilities();
-          
-          
-          
+          this.getCapabilities();  
         }
         else {
           this.activeProvider = null;
@@ -370,6 +410,21 @@ import mapboxgl from "mapbox-gl";
         this.contact_card_content = mkr.properties;
       },
 
+      getChildProvidersOfProviderId(provider){
+        let that = this;
+        let endpoint = `//dev-nemrics.pantheonsite.io/wp-json/wp/v2/provider/?parent=${provider.id}`;
+        fetch(endpoint)
+        .then(function(response) {
+           return response.json()
+        })
+        .then(function(data) {
+          provider.children = data;
+          that.providers.push(provider);
+        });
+
+        
+      },
+
       getAllProviders:function(extra = ""){
         let that = this;
         let endpoint = `//dev-nemrics.pantheonsite.io/wp-json/wp/v2/provider/${extra}`;
@@ -377,9 +432,15 @@ import mapboxgl from "mapbox-gl";
         .then(function(response) {
            return response.json()
         })
-        .then(data => 
-          that.providers = data
-        );
+        .then(function(data) {
+          for(var i=0; i<data.length; i++){
+            var provider = data[i];
+            that.getChildProvidersOfProviderId(provider)
+          }
+
+          
+        })
+        
       },
 
       removeActiveTag: function(){
@@ -497,16 +558,39 @@ import mapboxgl from "mapbox-gl";
     },
 
     mounted() {
-      this.getAllProviders("?parent=0&filter[orderby]=name&order=asc");
+      this.getAllProviders("?parent=0&per_page=100&filter[orderby]=name&order=asc");
       this.getAllTags();
-      this.getCapabilities(1);
-      this.initMap();
+      //this.getCapabilities(1);
+      //this.initMap();
       //this.getAllCapabilities(1);
+     
+      switch (this.$router.currentRoute.name){
+        case "SingleProvider":
+          var prov = this.$router.currentRoute.params.singleProvider;
+          this.getCapabilitiesForProviderId(prov);
+          this.initMap();
 
+        break;
+
+        default:
+          this.getCapabilities(1);
+          this.initMap();
+        break;
+      }
+    },
+
+    watch: {
+        $route(to, from) {
+          console.log(from);
+          if(to.name == "SingleProvider") {
+            var prov = to.params.singleProvider;
+            this.getCapabilitiesForProviderId(prov);
+          }
+        }
     },
 
     computed:{
-      queryString: function (){
+      queryString: function () {
         let str;
         
         if(this.tagToSearch != null) {
@@ -514,11 +598,35 @@ import mapboxgl from "mapbox-gl";
         }
 
         if(this.activeProvider != null) {
-          str += `&provider=${this.activeProvider.id}`
+          str += `&provider=${this.activeProvider}`
         }
         str += `&per_page=100&orderby=title&order=asc`
 
         return str;
+      },
+
+      activeProviderName: function() {
+        var n = "";
+
+        if(this.activeProvider) {
+    
+          for (var i=0; i < this.providers.length; i++) {
+
+              if (this.providers[i].id == this.activeProvider) {
+                  n = this.providers[i].name;
+              } else {
+                if (this.providers[i].children.length > 0) {
+                  
+                  for (var j = 0; j < this.providers[i].children.length; j++) {
+                    if (this.providers[i].children[j].id == this.activeProvider)
+                      n = this.providers[i].children[j].name;
+                  }
+                }
+              }
+          }
+        }
+
+        return n;
       }
     }
   }
@@ -553,7 +661,25 @@ import mapboxgl from "mapbox-gl";
     font-size: 18px; 
 }
 
-  .header-container {
-    margin-top:25px;
-  }
+.header-container {
+  margin-top:25px;
+}
+
+.sticky-top {
+  position: sticky;
+  top: 140px;
+}
+
+.provider-list a {
+  text-decoration: none;;
+}
+
+.provider-list li {
+  list-style: none;
+  padding:5px 2px;
+}
+
+.provider-list li li {
+  font-size:0.75em;
+}
 </style>
