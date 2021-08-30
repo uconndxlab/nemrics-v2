@@ -1,15 +1,15 @@
 <template>
-  <hello-world />
+  <default-view ref="dash" />
 </template>
 
 <script>
-  import HelloWorld from '../components/HelloWorld'
+  import DefaultView from '../components/ViewAll'
 
   export default {
     name: 'Home',
 
     components: {
-      HelloWorld,
+      DefaultView,
     },
   }
 </script>

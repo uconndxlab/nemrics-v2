@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
+import Provider from '../views/Provider'
 
 Vue.use(VueRouter)
 
@@ -9,6 +10,26 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/tag/:singleTag',
+    name: 'SingleTag',
+    component: Home
+  },
+  {
+    path: '/provider/:singleProvider',
+    name: 'SingleProvider',
+    component: Home
+  },
+  {
+    path: '/provider/:provider/:tag',
+    name: 'ProviderandTag',
+    component: Home
+  },
+  {
+    path:'/provider/:id',
+    name:'Provider',
+    component:Provider
   },
   {
     path: '/about',

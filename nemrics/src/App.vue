@@ -1,33 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar
-      app
-      color="white"
-      
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          :src="require('@/assets/logo.png')"
-          transition="scale-transition"
-          width="120"
-        />
 
-
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        to="/about"
-        text
-      >
-        <span class="mr-2">About NEMRICS</span>
-        <v-icon>mdi-information</v-icon>
-      </v-btn>
-    </v-app-bar>
 
     <v-main>
       <router-view/>
@@ -41,7 +14,30 @@ export default {
   name: 'App',
 
   data: () => ({
-    //
+      allTags:[],
+      tagToSearch:null,
   }),
+
+  methods: {
+    getAllTags: function() {
+      let that = this;
+      let endpoint = "//dev-nemrics.pantheonsite.io/wp-json/wp/v2/tags?per_page=100&orderby=count";
+      fetch(endpoint)
+      .then(function(response) {
+          return response.json()
+      })
+      .then(function(data) {
+        that.allTags = data;
+      });
+    },
+  },
+
+  mounted() {
+    //this.getAllTags();
+  }
 };
 </script>
+
+<style scoped>
+
+</style>

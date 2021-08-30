@@ -1,32 +1,70 @@
 <template>
 <div>
- <v-parallax
- height="300"
-    dark
-    src="https://dev-nemrics.pantheonsite.io/wp-content/uploads/2021/06/underwater_EDIT-scaled.jpg"
-  >
-    <v-row
-      align="center"
-      justify="center"
+    <v-app-bar
+      app
+      
+      prominent
+      src="https://dev-nemrics.pantheonsite.io/wp-content/uploads/2021/06/underwater_EDIT-scaled.jpg"
     >
-      <v-col cols="8" v-if="allTags.length">
-        <h3 class="text-h5">Search for Capabilities</h3>
-          <v-autocomplete
-            :items="allTags"
-            item-text="name"
-            color="white"
-            v-model="tagToSearch"
-            @change="getCapabilitiesByTag(tagToSearch.id)"
-            solo
-            label="Conduct a search..."
-            return-object
-          ></v-autocomplete>
+      <div class="d-flex align-center">
+        <!-- <v-img
+          alt="Vuetify Logo"
+          class="shrink mr-2"
+          contain
+          :src="require('@/assets/logo.png')"
+          transition="scale-transition"
+          width="120"
+        /> -->
+
+
+      </div>
+      <v-container fluid class="header-container">
+        <v-row>
+        <v-col cols="10">  
+          
+                <v-autocomplete
+                  clearable
+                  item-text="name"
+                  color="white"
+                  solo
+                  label="Conduct a search..."
+                  :items="allTags"
+                  v-model="tagToSearch"
+                  @change="getCapabilitiesByTag()"
+                  return-object
+                >
+                 <template slot="selection" slot-scope="data">
+                    <!-- HTML that describe how select should render selected items -->
+                    <strong> Capability Type: </strong> &nbsp; {{data.item.name}}
+                  </template>
+                  <template slot="item" slot-scope="data">
+                    <!-- HTML that describe how select should render items when the select is open -->
+                           <v-badge color="info" :content="data.item.count">{{ data.item.name }} </v-badge>
+                  </template> 
+                
+                
+                </v-autocomplete>
         </v-col>
-    </v-row>
-  </v-parallax>
-  <v-container>
+        <v-spacer></v-spacer>
+        <v-col right>
+            <v-btn
+              dark
+              to="/about"
+              text
+            >
+              About NEMRICS
+              <v-icon>mdi-information</v-icon>
+            </v-btn>
+        </v-col>
+              </v-row>
+      </v-container>
+    </v-app-bar>
+
+
+
+  <v-container fluid>
     <v-row>
-      <v-col cols="4">
+      <v-col cols="3">
         <v-toolbar flat>
           <v-toolbar-title>Organizations</v-toolbar-title>
         </v-toolbar>
@@ -124,10 +162,17 @@
     </v-tab-item>
     </v-tabs-items>
       </v-col>
-      <v-col cols="4" v-if="activeCapability">
 
-        <div v-if="activeCapability != null">
-          <v-card
+    </v-row>
+
+
+<v-dialog
+      v-model="showSingleCapability"
+      width="800"
+      transition="dialog-bottom-transition"
+    >
+
+          <v-card v-if="showSingleCapability"
               class="mx-auto"
             >
 
@@ -139,31 +184,29 @@
                 <v-btn
                     icon
                     class="hidden-xs-only"
-                    @click="activeCapability = null"
+                    @click="activeCapability = null;showSingleCapability=false;"
                   >
                     <v-icon>mdi-close</v-icon>
                   </v-btn>
-                <v-toolbar-title>Details</v-toolbar-title>
+                <v-toolbar-title v-html="activeCapability.title.rendered"></v-toolbar-title>
 
               </v-toolbar>
-              <v-img
-                class="white--text align-end"
-                height="200px"
-                :src="activeCapability.img ? activeCapability.img : require('@/assets/matt-hardy-6ArTTluciuA-unsplash.jpg')"
-              >
-                <v-card-title v-html="activeCapability.title.rendered"></v-card-title>
-              </v-img>
 
-              <v-card-subtitle class="pb-0">
-                {{activeCapability.contact_card.name}}
-              </v-card-subtitle>
 
+
+                 <iframe width="800" height="450" style="border:0; max-width:100%;" loading="lazy" allowfullscreen
+:src="`https://maps.google.com/maps?q=${activeCapability.contact_card.address}&t=&z=13&ie=UTF8&iwloc=&output=embed`"></iframe>
               <v-card-text class="text--primary">
+
                 <div v-html="activeCapability.excerpt.rendered"></div>
                 
                 <div v-html="activeCapability.content.rendered"></div>
-                <div><strong>Contact name:</strong> {{activeCapability.contact_card.contact_name}}</div>
-                 <address v-html="activeCapability.contact_card.address"></address>
+                <v-card-subtitle>
+                <strong>Offered by:</strong> <span v-html="activeCapability.contact_card.name"></span>
+                </v-card-subtitle>
+                <v-card-subtitle>
+                  <div><strong>Contact name:</strong> {{activeCapability.contact_card.contact_name}}</div>
+                </v-card-subtitle>
               </v-card-text>
 
               <v-card-actions>
@@ -183,18 +226,39 @@
                 </v-btn>
               </v-card-actions>
             </v-card>
+    </v-dialog>
+
+    <v-bottom-sheet v-model="showSingleContactCard" hide-overlay persistent>
+      <v-sheet
+        class="text-center"
+        height="200px"
+      >
+        <v-btn
+          class="mt-6"
+          text
+          color="red"
+          @click="showSingleContactCard = !showSingleContactCard"
+        >
+          close
+        </v-btn>
+        <h5>{{contact_card_content.title}}</h5>
+        <div class="py-3">
+          View matching capabilities: <v-btn text @click="resultsTab=0; showSingleContactCard = false;">View Matching Capabilities</v-btn>
         </div>
-      </v-col>
-    </v-row>
+      </v-sheet>
+    </v-bottom-sheet>
+
   </v-container>
 </div>
 </template>
 
 <script>
-
+// This is a lazy catch-all component for testing features and filtering. 
+// I'm using it as the home view for now while I work on other stuff
+// Sincerely, @joelsalisbury 2 days before demo day...
 import mapboxgl from "mapbox-gl";
   export default {
-    name: 'HelloWorld',
+    name: 'default-view',
     components: {
       
     },
@@ -217,7 +281,10 @@ import mapboxgl from "mapbox-gl";
       map: null,
       mapMarkers:[],
       resultsTab:1,
-      activeCapability:null
+      activeCapability:null,
+      showSingleCapability:false,
+      showSingleContactCard: false,
+      contact_card_content:{}
     }),
 
     methods:{
@@ -298,6 +365,11 @@ import mapboxgl from "mapbox-gl";
 
       },
 
+      getContactCard(mkr) {
+        this.showSingleContactCard = true;
+        this.contact_card_content = mkr.properties;
+      },
+
       getAllProviders:function(extra = ""){
         let that = this;
         let endpoint = `//dev-nemrics.pantheonsite.io/wp-json/wp/v2/provider/${extra}`;
@@ -348,7 +420,7 @@ import mapboxgl from "mapbox-gl";
 
       displayItem(item) {
         console.log(item);
-        
+        this.showSingleCapability = true;
         this.activeCapability = item;
         
       },
@@ -402,6 +474,7 @@ import mapboxgl from "mapbox-gl";
         el.className = "marker";
         el.addEventListener("click", function(){
           //that.activeProvider = marker.properties.id;
+          that.getContactCard(marker);
         });
         // make a marker for each feature and add it to the map
         var mkr = new mapboxgl.Marker(el)
@@ -410,6 +483,7 @@ import mapboxgl from "mapbox-gl";
             new mapboxgl.Popup({ offset: 25 }) // add popups
               .setHTML(`
                 <h3>${marker.properties.title}</h3>
+                
               `)
           )
           .addTo(that.map);
@@ -451,10 +525,10 @@ import mapboxgl from "mapbox-gl";
 </script>
 
 <style>
-p {
+/* p {
   font-family:'Times New Roman', Times, serif;
   font-size:1.3em;
-}
+} */
 
 #mapView{
   height:500px;
@@ -478,4 +552,8 @@ p {
     height: 20px;
     font-size: 18px; 
 }
+
+  .header-container {
+    margin-top:25px;
+  }
 </style>
